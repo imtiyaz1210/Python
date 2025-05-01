@@ -1,0 +1,582 @@
+import json
+import pymongo
+import pymysql
+import pandas as pd
+from datetime import datetime
+
+# Load MongoDB to MySQL field mapping
+mapping = {
+"_id": "_id",
+"Aadhaar No": "Aadhaar_No",
+"Aadhar No": "Aadhar_No",
+"Address": "Address",
+"AGENT": "AGENT",
+"Agreement Date": "Agreement_Date",
+"Amount Received": "Amount_Received",
+"Any special request or condition from the customer?": "Any_special_request_or_condition_from_the_customer",
+"Are there any delays?": "Are_there_any_delays",
+"AssignTo": "AssignTo",
+"Audit_Created_By": "Audit_Created_By",
+"Audit_Created_On": "Audit_Created_On",
+"Audit_Evaluation_Duration": "Audit_Evaluation_Duration",
+"Audit_Started_On": "Audit_Started_On",
+"AuditScore": "AuditScore",
+"Balance": "Balance",
+"Billing City": "Billing_City",
+"Billing State": "Billing_State",
+"block_name": "block_name",
+"Broker": "Broker",
+"Category": "Category",
+"Certified": "Certified",
+"Chassis No": "Chassis_No",
+"City": "City",
+"Co dealer": "Co_dealer",
+"Color": "Color",
+"Cubic Capacity": "Cubic_Capacity",
+"Current Location": "Current_Location",
+"Cust Address": "Cust_Address",
+"Cust Expect Price": "Cust_Expect_Price",
+"Cust Name": "Cust_Name",
+"Customer Location": "Customer_Location",
+"Customer Remark": "Customer_Remark",
+"Customer Remarks": "Customer_Remarks",
+"Customer Status": "Customer_Status",
+"Deleted_By": "Deleted_By",
+"Deleted_On": "Deleted_On",
+"DeletedStatus": "DeletedStatus",
+"dispositionBy": "dispositionBy",
+"dispositionByRole": "dispositionByRole",
+"dispositionType": "dispositionType",
+"Email": "Email",
+"Emission": "Emission",
+"Engine No": "Engine_No",
+"escalatedLevel": "escalatedLevel",
+"escalationDisposition": "escalationDisposition",
+"escalationDispositionAnswerId": "escalationDispositionAnswerId",
+"Est Labor Cost": "Est_Labor_Cost",
+"Est Labour Cost": "Est_Labour_Cost",
+"Est Part Cost": "Est_Part_Cost",
+"Est Selling Price": "Est_Selling_Price",
+"Evaluation Date": "Evaluation_Date",
+"Evaluator Name": "Evaluator_Name",
+"Exchange": "Exchange",
+"Exchange Bonus": "Exchange_Bonus",
+"Exchange Bonus Dealer": "Exchange_Bonus_Dealer",
+"Exchange Bonus Mtfr": "Exchange_Bonus_Mtfr",
+"Exchange Location": "Exchange_Location",
+"Exchange Type": "Exchange_Type",
+"Exp Delivery Date": "Exp_Delivery_Date",
+"Exp Selling Price": "Exp_Selling_Price",
+"Expected completion date": "Expected_completion_date",
+"Expt Selling Date": "Expt_Selling_Date",
+"Fatal_Status": "Fatal_Status",
+"Finance Amount": "Finance_Amount",
+"Finance Branch": "Finance_Branch",
+"Finance Employee": "Finance_Employee",
+"Finance or Cash": "Finance_or_Cash",
+"Financer": "Financer",
+"Financier": "Financier",
+"Fuel Type": "Fuel_Type",
+"Ground Clearance": "Ground_Clearance",
+"GST Category": "GST_Category",
+"GST In": "GST_In",
+"GST Taxes": "GST_Taxes",
+"Gstin": "Gstin",
+"Has the customers concern been resolved?": "Has_the_customers_concern_been_resolved",
+"HSN": "HSN",
+"IDV": "IDV",
+"If not ready, what is pending?": "If_not_ready_what_is_pending",
+"Ins Company Name": "Ins_Company_Name",
+"Ins Expiry Date": "Ins_Expiry_Date",
+"Insurance": "Insurance",
+"Insurance Company": "Insurance_Company",
+"Insurance Cost": "Insurance_Cost",
+"Insurance Date": "Insurance_Date",
+"Insurance Estimation": "Insurance_Estimation",
+"Insurance Quoted": "Insurance_Quoted",
+"Insurance Type": "Insurance_Type",
+"Invoice Price": "Invoice_Price",
+"isEscalationDone": "isEscalationDone",
+"Lead Remarks": "Lead_Remarks",
+"Lead Status": "Lead_Status",
+"level1_submittedRole": "level1_submittedRole",
+"Locality": "Locality",
+"Location": "Location",
+"Longitude": "Longitude",
+"Lost Reason": "Lost_Reason",
+"Make": "Make",
+"Manuf Month": "Manuf_Month",
+"Manuf Warranty": "Manuf_Warranty",
+"Manuf Year": "Manuf_Year",
+"MetaDataid": "MetaDataid",
+"Mfg Year From": "Mfg_Year_From",
+"Mfg Year To": "Mfg_Year_To",
+"Mileage": "Mileage",
+"Mobile Number": "Mobile_Number",
+"Model": "Model",
+"NCB": "NCB",
+"Negotiated Selling Price": "Negotiated_Selling_Price",
+"New Model": "New_Model",
+"New Sub Model": "New_Sub_Model",
+"Next Action Date": "Next_Action_Date",
+"Next Action Time": "Next_Action_Time",
+"Next Activity": "Next_Activity",
+"Nominee": "Nominee",
+"Non Cert Reason": "Non_Cert_Reason",
+"Not Interested Evaluator Remarks": "Not_Interested_Evaluator_Remarks",
+"Not Interested Remarks": "Not_Interested_Remarks",
+"Occupation": "Occupation",
+"Odo Meter": "Odo_Meter",
+"On Road Price": "On_Road_Price",
+"Owner Series No": "Owner_Series_No",
+"Pan": "Pan",
+"Pan or Form 60": "Pan_or_Form_60",
+"Part Length": "Part_Length",
+"partialSaveId": "partialSaveId",
+"Phone O": "Phone_O",
+"PIN": "PIN",
+"Place Of Supply": "Place_Of_Supply",
+"Please select the refurb service center.": "Please_select_the_refurb_service_center",
+"Please select the Refurb Service Center - IN House.": "Please_select_the_Refurb_Service_Center_N_House",
+"Please update the Receiving Location.": "Please_update_the_Receiving_Location",
+"Preferred Date": "Preferred_Date",
+"Previous Owners": "Previous_Owners",
+"Price Quoted": "Price_Quoted",
+"Purchase Brand": "Purchase_Brand",
+"Purchase Color": "Purchase_Color",
+"Purchase Date": "Purchase_Date",
+"Purchase Location": "Purchase_Location",
+"Purchase Model": "Purchase_Model",
+"Purchase Price": "Purchase_Price",
+"Purchase Sub Model": "Purchase_Sub_Model",
+"Purchase Type": "Purchase_Type",
+"RC Expiry Date": "RC_Expiry_Date",
+"RC Status": "RC_Status",
+"RC Tax Type": "RC_Tax_Type",
+"Ready for Sale Location": "Ready_for_Sale_Location",
+"Reason for delay?": "Reason_for_delay",
+"Referred By": "Referred_By",
+"Refurbished by the service center.": "Refurbished_by_the_service_center",
+"Refurbishment Estimation": "Refurbishment_Estimation",
+"Refurbishment Status": "Refurbishment_Status",
+"Register address": "Register_address",
+"Register Owner Address": "Register_Owner_Address",
+"Register Owner Name": "Register_Owner_Name",
+"Registration": "Registration",
+"Registration Date": "Registration_Date",
+"Registration No": "Registration_No",
+"Relation": "Relation",
+"Relationship": "Relationship",
+"Remarks": "Remarks",
+"Revised Offered Price": "Revised_Offered_Price",
+"RTA Customer": "RTA_Customer",
+"Sales Executive": "Sales_Executive",
+"ScheduleDate": "ScheduleDate",
+"ScheduleEndTime": "ScheduleEndTime",
+"ScheduleReason": "ScheduleReason",
+"ScheduleStartTime": "ScheduleStartTime",
+"ScheduleTo": "ScheduleTo",
+"ScoredValue": "ScoredValue",
+"Seating Capacity": "Seating_Capacity",
+"Segment": "Segment",
+"Seller Name": "Seller_Name",
+"Selling Price by Business Head": "Selling_Price_by_Business_Head",
+"Selling With Ins": "Selling_With_Ins",
+"Source": "Source",
+"Specify": "Specify",
+"Specify the reason for the delay": "Specify_the_reason_for_the_delay",
+"stageID": "stageID",
+"stageName": "stageName",
+"stageTransactionId": "stageTransactionId",
+"State": "State",
+"Status Type": "Status_Type",
+"Stock Location": "Stock_Location",
+"submittedBy": "submittedBy",
+"submittedByRole": "submittedByRole",
+"submittedDateTime": "submittedDateTime",
+"subSubProcess": "subSubProcess",
+"SUPERADMIN": "SUPERADMIN",
+"tansUniqueId": "tansUniqueId",
+"Team Leader": "Team_Leader",
+"Ticket_Status": "Ticket_Status",
+"TL Remarks Lost": "TL_Remarks_Lost",
+"To Stage Name": "To_Stage_Name",
+"ToStageID": "ToStageID",
+"Total Taxes And Charges": "Total_Taxes_And_Charges",
+"Transmission": "Transmission",
+"Used Car Model": "Used_Car_Model",
+"Used Car Sub Model": "Used_Car_Sub_Model",
+"Variant": "Variant",
+"Veh Billing Address": "Veh_Billing_Address",
+"Vehicle Selling Price": "Vehicle_Selling_Price",
+"Vehicle Status": "Vehicle_Status",
+"Vehicle Type": "Vehicle_Type",
+"Visit Status": "Visit_Status",
+"Warranty": "Warranty",
+"Warranty Exp Date": "Warranty_Exp_Date",
+"Warranty Type": "Warranty_Type",
+"What is the current stage of refurbishment?": "What_is_the_current_stage_of_refurbishment",
+"What specific tasks are still pending?": "What_specific_tasks_are_still_pending",
+"What was the customers main concern earlier?": "What_was_the_customers_main_concern_earlier",
+"Which showroom will the vehicle be allocated to?": "Which_showroom_will_the_vehicle_be_allocated_to"
+}
+
+# Database Connections
+MONGO_URI = "mongodb://10.10.201.208:28018/?tls=false" 
+MYSQL_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "Root@123",
+    "database": "trident_reports"
+}
+
+
+def clean_date(value):
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in ["na", "n/a", "", "null", "none", "NA"]:
+            return None
+        date_formats = [
+            "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y",
+            "%b %d, %Y", "%b. %d, %Y", "%B %d, %Y", "%B. %d, %Y"
+        ]
+        for fmt in date_formats:
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+        return None
+    return value
+
+def clean_integer(value):
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in ["na", "n/a", "", "null", "none"]:
+            return "Not Available"
+        if value.isdigit():
+            return int(value)
+        return None
+    elif isinstance(value, (int, float)):
+        return int(value)
+    return None
+def clean_time_duration(value):
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in ["na", "n/a", "", "null", "none"]:
+            return None
+        try:
+            # validate and return as string
+            dt = datetime.strptime(value, "%H:%M:%S")
+            return dt.strftime("%H:%M:%S")
+        except ValueError:
+            return None
+    return None
+
+try:
+    mongo_client = pymongo.MongoClient(MONGO_URI)
+    mongo_db = mongo_client["trident_reporting"]
+    mongo_collection = mongo_db["Process_18_History"]
+
+    mongo_data = list(mongo_collection.find())
+
+    if not mongo_data:
+        print("No records found in MongoDB.")
+    else:
+        print(f"Fetched {len(mongo_data)} records from MongoDB.")
+
+        mysql_conn = pymysql.connect(**MYSQL_CONFIG)
+        mysql_cursor = mysql_conn.cursor()
+
+        mysql_table = "sourcing_reports"
+        truncate_query = f"TRUNCATE TABLE {mysql_table}"
+        mysql_cursor.execute(truncate_query)
+        mysql_conn.commit()
+        mysql_columns = ", ".join(mapping.values())
+        placeholders = ", ".join(["%s"] * len(mapping))
+        insert_query = f"INSERT INTO {mysql_table} ({mysql_columns}) VALUES ({placeholders})"
+
+        batch_size = 1000
+        batch_data = []
+
+        for record in mongo_data:
+            mysql_values = []
+            for mongo_field, mysql_field in mapping.items():
+                value = record.get(mongo_field, None)
+
+                if isinstance(value, list):
+                    value = ", ".join(map(str, value)) if value else None
+                
+                elif mongo_field == "Evaluation Date":
+                    value = clean_date(value)
+                # elif mongo_field == "Audit_Evaluation_Duration":
+                #     value = clean_time_duration(value)
+                elif isinstance(value, dict):
+                    value = json.dumps(value)
+                elif isinstance(value, bytes):
+                    value = value.decode("utf-8")
+                elif isinstance(value, pd.Timestamp):
+                    value = value.to_pydatetime()
+                elif isinstance(value, str) and value.strip() == '':
+                    value = None
+                elif mysql_field in ["Evaluation Date","Next_Action_Date", "Preferred_Date", "Next_Action_Time", "Purchase_Date","Exp_Delivery_Date","Expected_completion_date","Expt_Selling_Date",
+                                     "RC_Expiry_Date", "Registration_Date", "enrollment_date","Warranty_Exp_Date","Ins_Expiry_Date","Insurance_Date"]:
+                    value = clean_date(value)
+                elif mysql_field.lower() in ["total_visits", "gold_sale", "dmd_sale", "silver_sale", "total_sale", "salesman_rating", "last_purchased_amount", "total_reward_points", "remaining_reward_points"]:
+                    value = clean_integer(value)
+
+                mysql_values.append(value)
+
+            batch_data.append(tuple(mysql_values))
+
+            if len(batch_data) >= batch_size:
+                mysql_cursor.executemany(insert_query, batch_data)
+                mysql_conn.commit()
+                batch_data = []
+
+        if batch_data:
+            mysql_cursor.executemany(insert_query, batch_data)
+            mysql_conn.commit()
+        print("Data transfer from MongoDB to MySQL completed successfully!")
+        print(f"Table {mysql_table} truncated successfully.")
+        # Step 1: Drop the consolidated table if it exists
+        drop_query = "DROP TABLE IF EXISTS consolidated_sourcing_reports"
+        mysql_cursor.execute(drop_query)
+        print("Dropped consolidated_table if it existed.")
+        create_query ="""
+        CREATE TABLE consolidated_sourcing_reports AS
+        SELECT Registration_No,
+        Max(Seller_Name)  AS Seller_Name,
+        Max(Customer_Location)  AS Customer_Location,
+        Max(Evaluator_Name)  AS Evaluator_Name,
+        Max(Preferred_Date)  AS Preferred_Date,
+        Max(Source)  AS Source,
+        Max(Segment)  AS Segment,
+        Max(Phone_O)  AS Phone_O,
+        Max(Mobile_Number)  AS Mobile_Number,
+        Max(Email)  AS Email,
+        Max(Relation)  AS Relation,
+        Max(Address)  AS Address,
+        Max(State)  AS State,
+        Max(City)  AS City,
+        Max(GST_Category)  AS GST_Category,
+        Max(Pan)  AS Pan,
+        Max(Locality)  AS Locality,
+        Max(Aadhar_No)  AS Aadhar_No,
+        Max(GST_In)  AS GST_In,
+        Max(PIN)  AS PIN,
+        Max(Make)  AS Make,
+        Max(Model)  AS Model,
+        Max(Variant)  AS Variant,
+        Max(Color)  AS Color,
+        Max(Chassis_No)  AS Chassis_No,
+        Max(Engine_No)  AS Engine_No,
+        Max(Manuf_Year)  AS Manuf_Year,
+        Max(Manuf_Month)  AS Manuf_Month,
+        Max(Manuf_Warranty)  AS Manuf_Warranty,
+        Max(Warranty_Exp_Date)  AS Warranty_Exp_Date,
+        Max(Mileage)  AS Mileage,
+        Max(Owner_Series_No)  AS Owner_Series_No,
+        Max(Fuel_Type)  AS Fuel_Type,
+        Max(Emission)  AS Emission,
+        Max(Category)  AS Category,
+        Max(Non_Cert_Reason)  AS Non_Cert_Reason,
+        Max(Financer)  AS Financer,
+        Max(Part_Length)  AS Part_Length,
+        Max(Cubic_Capacity)  AS Cubic_Capacity,
+        Max(Ground_Clearance)  AS Ground_Clearance,
+        Max(HSN)  AS HSN,
+        Max(Transmission)  AS Transmission,
+        Max(Vehicle_Type)  AS Vehicle_Type,
+        Max(Seating_Capacity)  AS Seating_Capacity,
+        Max(Remarks)  AS Remarks,
+        Max(RC_Status)  AS RC_Status,
+        Max(Registration_Date)  AS Registration_Date,
+        Max(RC_Tax_Type)  AS RC_Tax_Type,
+        Max(RC_Expiry_Date)  AS RC_Expiry_Date,
+        Max(Insurance_Type)  AS Insurance_Type,
+        Max(Ins_Company_Name)  AS Ins_Company_Name,
+        Max(Ins_Expiry_Date)  AS Ins_Expiry_Date,
+        Max(Selling_With_Ins)  AS Selling_With_Ins,
+        Max(IDV)  AS IDV,
+        Max(NCB)  AS NCB,
+        Max(RTA_Customer)  AS RTA_Customer,
+        Max(Purchase_Price)  AS Purchase_Price,
+        Max(Refurbishment_Estimation)  AS Refurbishment_Estimation,
+        Max(Est_Part_Cost)  AS Est_Part_Cost,
+        Max(Insurance_Estimation)  AS Insurance_Estimation,
+        Max(Cust_Expect_Price)  AS Cust_Expect_Price,
+        Max(Expt_Selling_Date)  AS Expt_Selling_Date,
+        Max(Exchange)  AS Exchange,
+        Max(Exchange_Type)  AS Exchange_Type,
+        Max(Referred_By)  AS Referred_By,
+        Max(Exchange_Bonus)  AS Exchange_Bonus,
+        Max(Relationship)  AS Relationship,
+        Max(Exchange_Location)  AS Exchange_Location,
+        Max(Exchange_Bonus_Dealer)  AS Exchange_Bonus_Dealer,
+        Max(Exchange_Bonus_Mtfr)  AS Exchange_Bonus_Mtfr,
+        Max(Cust_Name)  AS Cust_Name,
+        Max(Cust_Address)  AS Cust_Address,
+        Max(Purchase_Brand)  AS Purchase_Brand,
+        Max(Purchase_Model)  AS Purchase_Model,
+        Max(Purchase_Sub_Model)  AS Purchase_Sub_Model,
+        Max(Purchase_Color)  AS Purchase_Color,
+        Max(Sales_Executive)  AS Sales_Executive,
+        Max(Team_Leader)  AS Team_Leader,
+        Max(Purchase_Type)  AS Purchase_Type,
+        Max(Evaluation_Date)  AS Evaluation_Date,
+        Max(Lead_Status)  AS Lead_Status,
+        Max(Visit_Status)  AS Visit_Status,
+        Max(Next_Activity)  AS Next_Activity,
+        Max(Next_Action_Date)  AS Next_Action_Date,
+        Max(Next_Action_Time)  AS Next_Action_Time,
+        Max(Lead_Remarks)  AS Lead_Remarks,
+        Max(Est_Selling_Price)  AS Est_Selling_Price,
+        Max(Vehicle_Status)  AS Vehicle_Status,
+        Max(Warranty)  AS Warranty,
+        Max(_id)  AS _id,
+        Max(Aadhaar_No)  AS Aadhaar_No,
+        Max(AGENT)  AS AGENT,
+        Max(Agreement_Date)  AS Agreement_Date,
+        Max(Amount_Received)  AS Amount_Received,
+        Max(Any_special_request_or_condition_from_the_customer)  AS Any_special_request_or_condition_from_the_customer,
+        Max(AssignTo)  AS AssignTo,
+        Max(Audit_Created_By)  AS Audit_Created_By,
+        Max(Audit_Created_On)  AS Audit_Created_On,
+        Max(AuditScore)  AS AuditScore,
+        Max(Balance)  AS Balance,
+        Max(Billing_City)  AS Billing_City,
+        Max(Billing_State)  AS Billing_State,
+        Max(block_name)  AS block_name,
+        Max(Broker)  AS Broker,
+        Max(Certified)  AS Certified,
+        Max(Customer_Remark)  AS Customer_Remark,
+        Max(Customer_Remarks)  AS Customer_Remarks,
+        Max(Customer_Status)  AS Customer_Status,
+        Max(Deleted_By)  AS Deleted_By,
+        Max(Deleted_On)  AS Deleted_On,
+        Max(DeletedStatus)  AS DeletedStatus,
+        Max(dispositionBy)  AS dispositionBy,
+        Max(dispositionByRole)  AS dispositionByRole,
+        Max(dispositionType)  AS dispositionType,
+        Max(escalatedLevel)  AS escalatedLevel,
+        Max(escalationDisposition)  AS escalationDisposition,
+        Max(Est_Labour_Cost)  AS Est_Labour_Cost,
+        Max(Fatal_Status)  AS Fatal_Status,
+        Max(Finance_Amount)  AS Finance_Amount,
+        Max(Finance_Branch)  AS Finance_Branch,
+        Max(Finance_Employee)  AS Finance_Employee,
+        Max(Finance_or_Cash)  AS Finance_or_Cash,
+        Max(Financier)  AS Financier,
+        Max(Insurance)  AS Insurance,
+        Max(Insurance_Company)  AS Insurance_Company,
+        Max(Insurance_Cost)  AS Insurance_Cost,
+        Max(Insurance_Date)  AS Insurance_Date,
+        Max(level1_submittedRole)  AS level1_submittedRole,
+        Max(Location)  AS Location,
+        Max(Longitude)  AS Longitude,
+        Max(Lost_Reason)  AS Lost_Reason,
+        Max(MetaDataid)  AS MetaDataid,
+        Max(Mfg_Year_From)  AS Mfg_Year_From,
+        Max(Mfg_Year_To)  AS Mfg_Year_To,
+        Max(Place_Of_Supply)  AS Place_Of_Supply,
+        Max(Price_Quoted)  AS Price_Quoted,
+        Max(Refurbished_by_the_service_center)  AS Refurbished_by_the_service_center,
+        Max(Refurbishment_Status)  AS Refurbishment_Status,
+        Max(Register_address)  AS Register_address,
+        Max(Register_Owner_Address)  AS Register_Owner_Address,
+        Max(ScheduleDate)  AS ScheduleDate,
+        Max(ScheduleEndTime)  AS ScheduleEndTime,
+        Max(Are_there_any_delays)  AS Are_there_any_delays,
+        Max(Audit_Evaluation_Duration)  AS Audit_Evaluation_Duration,
+        Max(Audit_Started_On)  AS Audit_Started_On,
+        Max(Co_dealer)  AS Co_dealer,
+        Max(Current_Location)  AS Current_Location,
+        Max(escalationDispositionAnswerId)  AS escalationDispositionAnswerId,
+        Max(Est_Labor_Cost)  AS Est_Labor_Cost,
+        Max(Exp_Delivery_Date)  AS Exp_Delivery_Date,
+        Max(Exp_Selling_Price)  AS Exp_Selling_Price,
+        Max(Expected_completion_date)  AS Expected_completion_date,
+        Max(GST_Taxes)  AS GST_Taxes,
+        Max(Gstin)  AS Gstin,
+        Max(Has_the_customers_concern_been_resolved)  AS Has_the_customers_concern_been_resolved,
+        Max(If_not_ready_what_is_pending)  AS If_not_ready_what_is_pending,
+        Max(Insurance_Quoted)  AS Insurance_Quoted,
+        Max(Invoice_Price)  AS Invoice_Price,
+        Max(isEscalationDone)  AS isEscalationDone,
+        Max(Negotiated_Selling_Price)  AS Negotiated_Selling_Price,
+        Max(New_Model)  AS New_Model,
+        Max(New_Sub_Model)  AS New_Sub_Model,
+        Max(Nominee)  AS Nominee,
+        Max(Not_Interested_Evaluator_Remarks)  AS Not_Interested_Evaluator_Remarks,
+        Max(Not_Interested_Remarks)  AS Not_Interested_Remarks,
+        Max(Occupation)  AS Occupation,
+        Max(Odo_Meter)  AS Odo_Meter,
+        Max(On_Road_Price)  AS On_Road_Price,
+        Max(Pan_or_Form_60)  AS Pan_or_Form_60,
+        Max(partialSaveId)  AS partialSaveId,
+        Max(Please_select_the_refurb_service_center)  AS Please_select_the_refurb_service_center,
+        Max(Please_select_the_Refurb_Service_Center_N_House)  AS Please_select_the_Refurb_Service_Center_N_House,
+        Max(Please_update_the_Receiving_Location)  AS Please_update_the_Receiving_Location,
+        Max(Previous_Owners)  AS Previous_Owners,
+        Max(Purchase_Date)  AS Purchase_Date,
+        Max(Purchase_Location)  AS Purchase_Location,
+        Max(Ready_for_Sale_Location)  AS Ready_for_Sale_Location,
+        Max(Reason_for_delay)  AS Reason_for_delay,
+        Max(Register_Owner_Name)  AS Register_Owner_Name,
+        Max(Registration)  AS Registration,
+        Max(Revised_Offered_Price)  AS Revised_Offered_Price,
+        Max(ScheduleReason)  AS ScheduleReason,
+        Max(ScheduleStartTime)  AS ScheduleStartTime,
+        Max(ScheduleTo)  AS ScheduleTo,
+        Max(ScoredValue)  AS ScoredValue,
+        Max(Selling_Price_by_Business_Head)  AS Selling_Price_by_Business_Head,
+        Max(Specify)  AS Specify,
+        Max(Specify_the_reason_for_the_delay)  AS Specify_the_reason_for_the_delay,
+        Max(stageID)  AS stageID,
+        Max(stageName)  AS stageName,
+        Max(stageTransactionId)  AS stageTransactionId,
+        Max(Status_Type)  AS Status_Type,
+        Max(Stock_Location)  AS Stock_Location,
+        Max(submittedBy)  AS submittedBy,
+        Max(submittedByRole)  AS submittedByRole,
+        Max(submittedDateTime)  AS submittedDateTime,
+        Max(subSubProcess)  AS subSubProcess,
+        Max(SUPERADMIN)  AS SUPERADMIN,
+        Max(tansUniqueId)  AS tansUniqueId,
+        Max(Ticket_Status)  AS Ticket_Status,
+        Max(TL_Remarks_Lost)  AS TL_Remarks_Lost,
+        Max(To_Stage_Name)  AS To_Stage_Name,
+        Max(ToStageID)  AS ToStageID,
+        Max(Total_Taxes_And_Charges)  AS Total_Taxes_And_Charges,
+        Max(Used_Car_Model)  AS Used_Car_Model,
+        Max(Used_Car_Sub_Model)  AS Used_Car_Sub_Model,
+        Max(Veh_Billing_Address)  AS Veh_Billing_Address,
+        Max(Vehicle_Selling_Price)  AS Vehicle_Selling_Price,
+        Max(Warranty_Type)  AS Warranty_Type,
+        Max(What_is_the_current_stage_of_refurbishment)  AS What_is_the_current_stage_of_refurbishment,
+        Max(What_specific_tasks_are_still_pending)  AS What_specific_tasks_are_still_pending,
+        Max(What_was_the_customers_main_concern_earlier)  AS What_was_the_customers_main_concern_earlier,
+        Max(Which_showroom_will_the_vehicle_be_allocated_to)  AS Which_showroom_will_the_vehicle_be_allocated_to
+        FROM sourcing_reports
+        WHERE Registration_No IS NOT NULL
+        GROUP BY Registration_No;
+        """
+        mysql_cursor.execute(create_query)
+        mysql_conn.commit()
+        print("Created consolidated_table from sourcing_reports.")
+
+except pymongo.errors.PyMongoError as mongo_err:
+    print(f"MongoDB Error: {mongo_err}")
+except pymysql.MySQLError as mysql_err:
+    print(f"MySQL Error: {mysql_err}")
+except Exception as e:
+    print(f"Unexpected Error: {e}")
+finally:
+    if 'mysql_cursor' in locals():
+        mysql_cursor.close()
+    if 'mysql_conn' in locals():
+        mysql_conn.close()
+    if 'mongo_client' in locals():
+        mongo_client.close()
+
+print("All Sourcing data closed successfully.")
